@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 
-import '../models/place.dart';
+import 'package:flutter/material.dart';
 import '../data/places_data.dart';
+import '../models/place.dart';
 import 'detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -12,54 +12,41 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final TextEditingController searchController = TextEditingController();
 
-  // Texte de recherche
   String searchQuery = '';
-
-  // Catégorie sélectionnée
   PlaceCategory? selectedCategory;
-
-  // Afficher uniquement les favoris
+  String? selectedRegion;
   bool showFavoritesOnly = false;
 
-  // Région sélectionnée
-  String? selectedRegion;
+  final Color primaryColor = const Color(0xFFE85D4A);
+  final Color backgroundColor = const Color(0xFFF8F7F4);
 
-  // Liste filtrée des lieux
+  List<String> get availableRegions {
+    return places.map((place) => place.region).toSet().toList()..sort();
+  }
+
   List<Place> get filteredPlaces {
     return places.where((place) {
+      final matchesSearch =
+          place.name.toLowerCase().contains(searchQuery.toLowerCase());
 
-      final matchesSearch = place.name
-          .toLowerCase()
-          .contains(searchQuery.toLowerCase());
+      final matchesCategory =
+          selectedCategory == null || place.category == selectedCategory;
 
-      final matchesCategory = selectedCategory == null ||
-          place.category == selectedCategory;
+      final matchesRegion =
+          selectedRegion == null || place.region == selectedRegion;
 
-      final matchesFavorite =
+      final matchesFavorites =
           !showFavoritesOnly || place.isFavorite;
-
-      final matchesRegion = selectedRegion == null ||
-          place.region == selectedRegion;
 
       return matchesSearch &&
           matchesCategory &&
-          matchesFavorite &&
-          matchesRegion;
-
+          matchesRegion &&
+          matchesFavorites;
     }).toList();
   }
 
-  // Liste des régions disponibles
-  List<String> get availableRegions {
-    return places
-        .map((place) => place.region)
-        .toSet()
-        .toList()
-      ..sort();
-  }
-
-  // Traduction des catégories
   String categoryName(PlaceCategory category) {
     switch (category) {
       case PlaceCategory.history:
@@ -75,380 +62,464 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  IconData categoryIcon(PlaceCategory category) {
+    switch (category) {
+      case PlaceCategory.history:
+        return Icons.account_balance;
+      case PlaceCategory.beach:
+        return Icons.beach_access;
+      case PlaceCategory.desert:
+        return Icons.landscape;
+      case PlaceCategory.nature:
+        return Icons.park;
+      case PlaceCategory.medina:
+        return Icons.location_city;
+    }
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
-      backgroundColor: Colors.grey[100],
-
-      // Barre supérieure
-      appBar: AppBar(
-        title: const Text(
-          'Découvre la Tunisie',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: Colors.red[700],
-        centerTitle: true,
-        actions: [
-
-          // Bouton Favoris
-          IconButton(
-            icon: Icon(
-              showFavoritesOnly
-                  ? Icons.favorite
-                  : Icons.favorite_border,
-              color: Colors.white,
-            ),
-            onPressed: () {
-              setState(() {
-                showFavoritesOnly = !showFavoritesOnly;
-              });
-            },
-          ),
-        ],
-      ),
-
-      body: Column(
-        children: [
-
-          // Barre de recherche
-          Padding(
-            padding: const EdgeInsets.all(16),
-
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Rechercher un lieu...',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
+      backgroundColor: backgroundColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // HEADER
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 22, 20, 25),
+              decoration: BoxDecoration(
+                color: primaryColor,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(28),
+                  bottomRight: Radius.circular(28),
                 ),
               ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.explore,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                      const SizedBox(width: 10),
+                      const Text(
+                        'Découvre Tunisie',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 23,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () {
+                          setState(() {
+                            showFavoritesOnly = !showFavoritesOnly;
+                          });
+                        },
+                        icon: Icon(
+                          showFavoritesOnly
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          color: Colors.white,
+                          size: 27,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Explore la beauté de la Tunisie 🇹🇳',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 21,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Découvre des endroits magnifiques et crée tes souvenirs.',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
 
-              onChanged: (value) {
-                setState(() {
-                  searchQuery = value;
-                });
-              },
-            ),
-          ),
-
-          // Filtres par catégorie
-          SizedBox(
-            height: 45,
-
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-              ),
-
-              children: [
-
-                categoryChip('Tous', null),
-
-                categoryChip(
-                  'Histoire',
-                  PlaceCategory.history,
-                ),
-
-                categoryChip(
-                  'Plage',
-                  PlaceCategory.beach,
-                ),
-
-                categoryChip(
-                  'Désert',
-                  PlaceCategory.desert,
-                ),
-
-                categoryChip(
-                  'Nature',
-                  PlaceCategory.nature,
-                ),
-
-                categoryChip(
-                  'Médina',
-                  PlaceCategory.medina,
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Filtres par région
-          SizedBox(
-            height: 45,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              children: [
-                regionChip('Toutes les régions', null),
-                ...availableRegions.map(
-                  (region) => regionChip(region, region),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          // Liste des lieux touristiques
-          Expanded(
-            child: filteredPlaces.isEmpty
-
-                ? const Center(
-                    child: Text(
-                      'Aucun lieu trouvé',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.grey,
+                  // SEARCH BAR
+                  TextField(
+                    controller: searchController,
+                    onChanged: (value) {
+                      setState(() {
+                        searchQuery = value;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Rechercher une destination...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.close),
+                              onPressed: () {
+                                searchController.clear();
+                                setState(() {
+                                  searchQuery = '';
+                                });
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 14,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
                       ),
                     ),
-                  )
+                  ),
+                ],
+              ),
+            ),
 
-                : ListView.builder(
-                    padding: const EdgeInsets.all(12),
+            // CONTENT
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 20,
+                ),
+                children: [
+                  // CATEGORIES
+                  const Text(
+                    'Explorer par catégorie',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
 
-                    itemCount: filteredPlaces.length,
-
-                    itemBuilder: (context, index) {
-
-                      final place = filteredPlaces[index];
-
-                      return Card(
-                        margin: const EdgeInsets.only(
-                          bottom: 15,
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        categoryChip(null, 'Tout', Icons.apps),
+                        ...PlaceCategory.values.map(
+                          (category) => categoryChip(
+                            category,
+                            categoryName(category),
+                            categoryIcon(category),
+                          ),
                         ),
+                      ],
+                    ),
+                  ),
 
-                        elevation: 3,
+                  const SizedBox(height: 22),
 
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
+                  // REGIONS
+                  const Text(
+                    'Choisir une région',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        regionChip(null, 'Toutes'),
+                        ...availableRegions.map(
+                          (region) => regionChip(region, region),
                         ),
+                      ],
+                    ),
+                  ),
 
-                        child: GestureDetector(
+                  const SizedBox(height: 24),
 
-                          // Double appui pour ajouter aux favoris
-                          onDoubleTap: () {
-                            setState(() {
-                              place.isFavorite =
-                                  !place.isFavorite;
-                            });
+                  // DESTINATIONS TITLE
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Destinations à découvrir',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '${filteredPlaces.length} lieux',
+                        style: TextStyle(
+                          color: primaryColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
 
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  place.isFavorite
-                                      ? 'Ajouté aux favoris'
-                                      : 'Retiré des favoris',
-                                ),
-                                duration:
-                                    const Duration(seconds: 1),
-                              ),
-                            );
-                          },
+                  const SizedBox(height: 15),
 
-                          child: InkWell(
-
-                            // Appui simple pour ouvrir les détails
-                            borderRadius:
-                                BorderRadius.circular(15),
-
-                            onTap: () async {
-
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      DetailScreen(place: place),
-                                ),
-                              );
-
-                              setState(() {});
-                            },
-
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-
-                              children: [
-
-                                // Image du lieu
-                                ClipRRect(
-                                  borderRadius:
-                                      const BorderRadius.vertical(
-                                    top: Radius.circular(15),
-                                  ),
-
-                                  child: Stack(
-                                    children: [
-
-                                      Image.asset(
-                                        place.imagePath,
-                                        height: 180,
-                                        width: double.infinity,
-                                        fit: BoxFit.contain,
-
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
-                                          return Container(
-                                            height: 180,
-                                            width: double.infinity,
-                                            color: Colors.grey[300],
-                                            child: const Icon(
-                                              Icons.image_not_supported,
-                                              size: 50,
-                                            ),
-                                          );
-                                        },
-                                      ),
-
-                                      // Icône Favoris
-                                      Positioned(
-                                        top: 10,
-                                        right: 10,
-
-                                        child: Icon(
-                                          place.isFavorite
-                                              ? Icons.favorite
-                                              : Icons.favorite_border,
-                                          color: place.isFavorite
-                                              ? Colors.red
-                                              : Colors.white,
-                                          size: 30,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                // Informations du lieu
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.all(12),
-
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-
-                                    children: [
-
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-
-                                          children: [
-
-                                            Text(
-                                              place.name,
-                                              style: const TextStyle(
-                                                fontSize: 18,
-                                                fontWeight:
-                                                    FontWeight.bold,
-                                              ),
-                                            ),
-
-                                            const SizedBox(height: 5),
-
-                                            Text(
-                                              '${place.region} • ${categoryName(place.category)}',
-                                              style: TextStyle(
-                                                color: Colors.grey[600],
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-
-                                      const Icon(
-                                        Icons.location_on,
-                                        color: Colors.red,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                  // PLACES LIST
+                  if (filteredPlaces.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(30),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.search_off,
+                            size: 55,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 12),
+                          Text(
+                            'Aucune destination trouvée',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey,
                             ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ...filteredPlaces.map(
+                      (place) => placeCard(place),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // CATEGORY CHIP
+  Widget categoryChip(
+    PlaceCategory? category,
+    String title,
+    IconData icon,
+  ) {
+    final isSelected = selectedCategory == category;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        selected: isSelected,
+        onSelected: (_) {
+          setState(() {
+            selectedCategory = category;
+          });
+        },
+        avatar: Icon(
+          icon,
+          size: 17,
+          color: isSelected ? Colors.white : primaryColor,
+        ),
+        label: Text(title),
+        selectedColor: primaryColor,
+        backgroundColor: Colors.white,
+        labelStyle: TextStyle(
+          color: isSelected ? Colors.white : Colors.black87,
+          fontWeight: FontWeight.w600,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: isSelected ? primaryColor : Colors.grey.shade200,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // REGION CHIP
+  Widget regionChip(String? region, String title) {
+    final isSelected = selectedRegion == region;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        selected: isSelected,
+        onSelected: (_) {
+          setState(() {
+            selectedRegion = region;
+          });
+        },
+        label: Text(title),
+        selectedColor: const Color(0xFFFFE2DC),
+        backgroundColor: Colors.white,
+        labelStyle: TextStyle(
+          color: isSelected ? primaryColor : Colors.black87,
+          fontWeight: FontWeight.w600,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: isSelected ? primaryColor : Colors.grey.shade200,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // PLACE CARD
+  Widget placeCard(Place place) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DetailScreen(place: place),
+              ),
+            );
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Stack(
+                children: [
+                  Image.asset(
+                    place.imagePath,
+                    height: 190,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 190,
+                        color: Colors.grey.shade200,
+                        child: const Center(
+                          child: Icon(
+                            Icons.image_not_supported,
+                            size: 45,
+                            color: Colors.grey,
                           ),
                         ),
                       );
                     },
                   ),
+
+                  // FAVORITE BUTTON
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: CircleAvatar(
+                      backgroundColor: Colors.white,
+                      child: IconButton(
+                        onPressed: () {
+                          setState(() {
+                            place.isFavorite = !place.isFavorite;
+                          });
+                        },
+                        icon: Icon(
+                          place.isFavorite
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          color: primaryColor,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // CATEGORY LABEL
+                  Positioned(
+                    bottom: 12,
+                    left: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: primaryColor,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        categoryName(place.category),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              Padding(
+                padding: const EdgeInsets.all(15),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      place.name,
+                      style: const TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          size: 17,
+                          color: primaryColor,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          place.region,
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          'Voir détails',
+                          style: TextStyle(
+                            color: primaryColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 13,
+                          color: primaryColor,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  // Widget pour les filtres
-  Widget categoryChip(
-    String label,
-    PlaceCategory? category,
-  ) {
-
-    final isSelected = selectedCategory == category;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-
-      child: ChoiceChip(
-        label: Text(label),
-
-        selected: isSelected,
-
-        selectedColor: Colors.red[700],
-
-        labelStyle: TextStyle(
-          color: isSelected ? Colors.white : Colors.black,
         ),
-
-        onSelected: (selected) {
-          setState(() {
-            selectedCategory = category;
-          });
-        },
-      ),
-    );
-  }
-
-  // Widget pour les filtres de région
-  Widget regionChip(
-    String label,
-    String? region,
-  ) {
-
-    final isSelected = selectedRegion == region;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-
-      child: ChoiceChip(
-        label: Text(label),
-
-        selected: isSelected,
-
-        selectedColor: Colors.blue[700],
-
-        labelStyle: TextStyle(
-          color: isSelected ? Colors.white : Colors.black,
-        ),
-
-        onSelected: (selected) {
-          setState(() {
-            selectedRegion = region;
-          });
-        },
       ),
     );
   }
